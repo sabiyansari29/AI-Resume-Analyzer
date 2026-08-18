@@ -22,7 +22,7 @@ function App() {
       setMessage("");
 
       const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
+        "https://ai-resume-analyzer-api-2nqx.onrender.com/api/auth/login",
         {
           email,
           password,
@@ -75,7 +75,7 @@ function App() {
       formData.append("resume", file);
 
       const uploadResponse = await axios.post(
-        "http://localhost:5000/api/resume/upload",
+        "https://ai-resume-analyzer-api-2nqx.onrender.com/api/resume/upload",
         formData,
         {
           headers: {
@@ -88,7 +88,7 @@ function App() {
 
       // Analyze resume
       const analysisResponse = await axios.get(
-        `http://localhost:5000/api/ai/analyze/${resumeId}`,
+        `https://ai-resume-analyzer-api-2nqx.onrender.com/api/ai/analyze/${resumeId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

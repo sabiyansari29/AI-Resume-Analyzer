@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL ="https://ai-resume-analyzer-api-2nqx.onrender.com/api";
 
 function App() {
   // =====================================================
