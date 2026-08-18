@@ -10,7 +10,6 @@ server/dist/
 *.log
 npm-debug.log*
 
-server/src/uploads/
-
 .DS_Store
 Thumbs.db
+server/src/uploads/*.pdf
