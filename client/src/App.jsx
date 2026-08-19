@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import axios from "axios";
 
-const API_URL ="https://ai-resume-analyzer-api-2nqx.onrender.com/api";
+const API_URL =
+  "https://ai-resume-analyzer-api-2nqx.onrender.com/api";
 
 function App() {
   // =====================================================
@@ -31,8 +32,6 @@ function App() {
   // JOBS
   // =====================================================
   const [jobs, setJobs] = useState([]);
-
-  // Selected job for details modal
   const [selectedJob, setSelectedJob] = useState(null);
 
   // =====================================================
@@ -47,6 +46,7 @@ function App() {
   // LOADING / MESSAGE
   // =====================================================
   const [message, setMessage] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [loading, setLoading] = useState(false);
   const [jobLoading, setJobLoading] = useState(false);
 
@@ -58,6 +58,7 @@ function App() {
 
     try {
       setMessage("");
+      setLoginError("");
 
       await axios.post(`${API_URL}/auth/register`, {
         name,
@@ -65,16 +66,12 @@ function App() {
         password,
       });
 
-      setMessage("Registration successful! Please login.");
-
       setName("");
       setEmail("");
       setPassword("");
 
-      setTimeout(() => {
-        setPage("login");
-        setMessage("");
-      }, 1500);
+      setPage("login");
+      setMessage("");
     } catch (error) {
       console.error("Register error:", error);
 
@@ -93,6 +90,7 @@ function App() {
 
     try {
       setMessage("");
+      setLoginError("");
 
       const response = await axios.post(
         `${API_URL}/auth/login`,
@@ -116,14 +114,18 @@ function App() {
       setEmail("");
       setPassword("");
 
-      setMessage("Login successful!");
+      // No successful login message
+      setMessage("");
+      setLoginError("");
     } catch (error) {
       console.error("Login error:", error);
 
-      setMessage(
+      setLoginError(
         error.response?.data?.message ||
-          "Login failed"
+          "Invalid email or password."
       );
+
+      setMessage("");
     }
   };
 
@@ -148,6 +150,7 @@ function App() {
     setMinimumMatch(0);
 
     setMessage("");
+    setLoginError("");
   };
 
   // =====================================================
@@ -378,14 +381,6 @@ function App() {
   // APPLY NOW
   // =====================================================
   const handleApply = (job) => {
-    /*
-      Backend me applyUrl available hone par
-      actual application page open hoga.
-
-      Agar applyUrl nahi hai to user ko message
-      show hoga.
-    */
-
     const applyUrl =
       job.applyUrl ||
       job.applicationUrl ||
@@ -482,28 +477,38 @@ function App() {
   // =====================================================
   if (!loggedIn && page === "register") {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-indigo-100 text-gray-900 flex items-center justify-center px-4">
+
         <div className="w-full max-w-md">
 
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-blue-500">
+
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 mb-5">
+              <span className="text-2xl font-bold text-white">
+                AI
+              </span>
+            </div>
+
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               AI Resume Analyzer
             </h1>
 
-            <p className="mt-3 text-slate-400">
+            <p className="mt-3 text-gray-600">
               Create your account
             </p>
+
           </div>
 
           <form
             onSubmit={handleRegister}
-            className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl"
+            className="bg-white/80 backdrop-blur-xl border border-blue-200 rounded-3xl p-8 shadow-2xl"
           >
-            <h2 className="text-2xl font-semibold mb-6">
+
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">
               Create Account
             </h2>
 
-            <label className="text-sm text-slate-300">
+            <label className="text-sm text-gray-700 font-medium">
               Name
             </label>
 
@@ -514,11 +519,11 @@ function App() {
               onChange={(e) =>
                 setName(e.target.value)
               }
-              className="mt-2 mb-5 w-full rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-blue-500"
+              className="mt-2 mb-5 w-full rounded-xl bg-gray-50 border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 placeholder:text-gray-500 text-gray-900"
               required
             />
 
-            <label className="text-sm text-slate-300">
+            <label className="text-sm text-gray-700 font-medium">
               Email
             </label>
 
@@ -529,11 +534,11 @@ function App() {
               onChange={(e) =>
                 setEmail(e.target.value)
               }
-              className="mt-2 mb-5 w-full rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-blue-500"
+              className="mt-2 mb-5 w-full rounded-xl bg-gray-50 border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 placeholder:text-gray-500 text-gray-900"
               required
             />
 
-            <label className="text-sm text-slate-300">
+            <label className="text-sm text-gray-700 font-medium">
               Password
             </label>
 
@@ -544,37 +549,40 @@ function App() {
               onChange={(e) =>
                 setPassword(e.target.value)
               }
-              className="mt-2 mb-6 w-full rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-blue-500"
+              className="mt-2 mb-6 w-full rounded-xl bg-gray-50 border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 placeholder:text-gray-500 text-gray-900"
               required
             />
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 rounded-lg py-3 font-semibold"
+              className="w-full rounded-xl py-3 font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transition-all duration-300 shadow-lg shadow-blue-500/30"
             >
               Create Account
             </button>
 
             {message && (
-              <p className="text-center text-sm text-slate-300 mt-4">
-                {message}
-              </p>
+              <div className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-center text-sm text-red-700">
+                ⚠ {message}
+              </div>
             )}
+
           </form>
 
-          <p className="text-center text-slate-400 mt-6">
+          <p className="text-center text-gray-600 mt-6">
             Already have an account?
 
             <button
               onClick={() => {
                 setPage("login");
                 setMessage("");
+                setLoginError("");
               }}
-              className="ml-2 text-blue-400 hover:text-blue-300"
+              className="ml-2 text-blue-600 hover:text-blue-500 font-medium"
             >
               Login
             </button>
           </p>
+
         </div>
       </div>
     );
@@ -585,28 +593,38 @@ function App() {
   // =====================================================
   if (!loggedIn) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-indigo-100 text-gray-900 flex items-center justify-center px-4">
+
         <div className="w-full max-w-md">
 
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-blue-500">
+
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 mb-5">
+              <span className="text-2xl font-bold text-white">
+                AI
+              </span>
+            </div>
+
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               AI Resume Analyzer
             </h1>
 
-            <p className="mt-3 text-slate-400">
+            <p className="mt-3 text-gray-600">
               Analyze your resume with AI
             </p>
+
           </div>
 
           <form
             onSubmit={handleLogin}
-            className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl"
+            className="bg-white/80 backdrop-blur-xl border border-blue-200 rounded-3xl p-8 shadow-2xl"
           >
-            <h2 className="text-2xl font-semibold mb-6">
+
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">
               Welcome Back
             </h2>
 
-            <label className="text-sm text-slate-300">
+            <label className="text-sm text-gray-700 font-medium">
               Email
             </label>
 
@@ -614,14 +632,15 @@ function App() {
               type="email"
               placeholder="Enter your email"
               value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-              className="mt-2 mb-5 w-full rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-blue-500"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setLoginError("");
+              }}
+              className="mt-2 mb-5 w-full rounded-xl bg-gray-50 border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 placeholder:text-gray-500 text-gray-900"
               required
             />
 
-            <label className="text-sm text-slate-300">
+            <label className="text-sm text-gray-700 font-medium">
               Password
             </label>
 
@@ -629,40 +648,45 @@ function App() {
               type="password"
               placeholder="Enter your password"
               value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-              className="mt-2 mb-6 w-full rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-blue-500"
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setLoginError("");
+              }}
+              className="mt-2 mb-6 w-full rounded-xl bg-gray-50 border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 placeholder:text-gray-500 text-gray-900"
               required
             />
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 rounded-lg py-3 font-semibold"
+              className="w-full rounded-xl py-3 font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transition-all duration-300 shadow-lg shadow-blue-500/30"
             >
               Login
             </button>
 
-            {message && (
-              <p className="text-center text-sm text-slate-300 mt-4">
-                {message}
-              </p>
+            {/* RED LOGIN ERROR */}
+            {loginError && (
+              <div className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700">
+                ⚠ {loginError}
+              </div>
             )}
+
           </form>
 
-          <p className="text-center text-slate-400 mt-6">
+          <p className="text-center text-gray-600 mt-6">
             Don't have an account?
 
             <button
               onClick={() => {
                 setPage("register");
                 setMessage("");
+                setLoginError("");
               }}
-              className="ml-2 text-blue-400 hover:text-blue-300"
+              className="ml-2 text-blue-600 hover:text-blue-500 font-medium"
             >
               Register
             </button>
           </p>
+
         </div>
       </div>
     );
@@ -672,21 +696,32 @@ function App() {
   // DASHBOARD
   // =====================================================
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 text-gray-900">
 
       {/* =================================================
           NAVBAR
       ================================================= */}
-      <nav className="border-b border-slate-800 bg-slate-950">
+      <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-xl sticky top-0 z-40 shadow-sm">
+
         <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
 
-          <h1 className="text-2xl font-bold text-blue-500">
-            AI Resume Analyzer
-          </h1>
+          <div className="flex items-center gap-3">
+
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+              <span className="font-bold text-white">
+                AI
+              </span>
+            </div>
+
+            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              AI Resume Analyzer
+            </h1>
+
+          </div>
 
           <button
             onClick={handleLogout}
-            className="border border-slate-700 hover:bg-slate-800 rounded-lg px-4 py-2"
+            className="border border-gray-300 hover:bg-gray-100 rounded-xl px-4 py-2 transition-all duration-300 text-gray-700 font-medium"
           >
             Logout
           </button>
@@ -700,41 +735,62 @@ function App() {
             HERO
         ================================================= */}
         <div className="mb-10">
-          <h2 className="text-4xl font-bold">
+
+          <p className="text-blue-600 font-bold mb-3 tracking-wider">
+            AI-POWERED CAREER ASSISTANT
+          </p>
+
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
             Resume Dashboard
           </h2>
 
-          <p className="text-slate-400 mt-3">
+          <p className="text-gray-600 mt-4 max-w-2xl text-lg">
             Upload your resume and get AI-powered
-            insights and matching job opportunities.
+            insights, skill recommendations and
+            matching job opportunities.
           </p>
+
         </div>
 
         {/* =================================================
             UPLOAD CARD
         ================================================= */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+        <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-lg">
 
-          <h3 className="text-2xl font-semibold">
-            Upload Resume
-          </h3>
+          <div className="flex items-center gap-4 mb-2">
 
-          <p className="text-slate-400 mt-2">
-            Upload your resume in PDF format.
-          </p>
+            <div className="w-12 h-12 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center text-2xl">
+              📄
+            </div>
 
-          <div className="mt-6 border-2 border-dashed border-slate-700 rounded-xl p-10 text-center">
+            <div>
+              <h3 className="text-2xl font-semibold text-gray-900">
+                Upload Resume
+              </h3>
+
+              <p className="text-gray-600 mt-1">
+                Upload your resume in PDF format.
+              </p>
+            </div>
+
+          </div>
+
+          <div className="mt-8 border-2 border-dashed border-gray-300 rounded-2xl p-10 text-center bg-gray-50 hover:bg-gray-100 transition-all duration-300">
+
+            <div className="text-5xl mb-4">
+              📄
+            </div>
 
             <input
               type="file"
               accept=".pdf,application/pdf"
               onChange={handleFileChange}
-              className="mx-auto block text-sm text-slate-400"
+              className="mx-auto block text-sm text-gray-600"
             />
 
             {file && (
-              <p className="text-green-400 mt-4">
-                Selected: {file.name}
+              <p className="text-green-600 mt-4 font-medium">
+                ✓ Selected: {file.name}
               </p>
             )}
 
@@ -744,7 +800,7 @@ function App() {
           <button
             onClick={handleUpload}
             disabled={loading}
-            className="mt-6 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg py-3 font-semibold"
+            className="mt-6 w-full rounded-xl py-3 font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white disabled:opacity-50 transition-all duration-300 shadow-lg"
           >
             {loading
               ? "Analyzing Resume..."
@@ -755,7 +811,7 @@ function App() {
           <button
             onClick={handleFindJobs}
             disabled={jobLoading || !resumeId}
-            className="mt-4 w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg py-3 font-semibold"
+            className="mt-4 w-full rounded-xl py-3 font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white disabled:opacity-50 transition-all duration-300 shadow-lg"
           >
             {jobLoading
               ? "Finding Matching Jobs..."
@@ -763,14 +819,8 @@ function App() {
           </button>
 
           {message && (
-            <p className="text-center text-slate-300 mt-4">
-              {message}
-            </p>
-          )}
-
-          {resumeId && (
-            <p className="text-center text-xs text-green-500 mt-3">
-              Resume uploaded successfully
+            <p className="text-center text-gray-700 mt-4 font-medium">
+              ✓ {message}
             </p>
           )}
 
@@ -782,18 +832,18 @@ function App() {
         {analysis && (
           <div className="mt-12">
 
-            <h2 className="text-3xl font-bold mb-6">
+            <h2 className="text-3xl font-bold mb-6 text-gray-900">
               AI Resume Analysis
             </h2>
 
             {/* SUMMARY */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6">
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 mb-6 shadow-lg">
 
-              <h3 className="text-xl font-semibold text-blue-400">
+              <h3 className="text-xl font-semibold text-blue-600">
                 Summary
               </h3>
 
-              <p className="mt-3 text-slate-300 leading-7">
+              <p className="mt-3 text-gray-700 leading-7">
                 {analysis.summary}
               </p>
 
@@ -803,67 +853,73 @@ function App() {
             <div className="grid md:grid-cols-3 gap-6">
 
               {/* STRENGTHS */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+              <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-lg">
 
-                <h3 className="text-xl font-semibold text-green-400">
+                <h3 className="text-xl font-semibold text-green-600">
                   Strengths
                 </h3>
 
                 <ul className="mt-4 space-y-3">
+
                   {analysis.strengths?.map(
                     (item, index) => (
                       <li
                         key={index}
-                        className="text-slate-300 text-sm leading-6"
+                        className="text-gray-700 text-sm leading-6"
                       >
-                        • {item}
+                        ✓ {item}
                       </li>
                     )
                   )}
+
                 </ul>
 
               </div>
 
               {/* WEAKNESSES */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+              <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-lg">
 
-                <h3 className="text-xl font-semibold text-yellow-400">
+                <h3 className="text-xl font-semibold text-yellow-600">
                   Weaknesses
                 </h3>
 
                 <ul className="mt-4 space-y-3">
+
                   {analysis.weaknesses?.map(
                     (item, index) => (
                       <li
                         key={index}
-                        className="text-slate-300 text-sm leading-6"
+                        className="text-gray-700 text-sm leading-6"
                       >
                         • {item}
                       </li>
                     )
                   )}
+
                 </ul>
 
               </div>
 
               {/* SUGGESTIONS */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+              <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-lg">
 
-                <h3 className="text-xl font-semibold text-purple-400">
+                <h3 className="text-xl font-semibold text-purple-600">
                   Suggestions
                 </h3>
 
                 <ul className="mt-4 space-y-3">
+
                   {analysis.suggestions?.map(
                     (item, index) => (
                       <li
                         key={index}
-                        className="text-slate-300 text-sm leading-6"
+                        className="text-gray-700 text-sm leading-6"
                       >
                         • {item}
                       </li>
                     )
                   )}
+
                 </ul>
 
               </div>
@@ -871,9 +927,9 @@ function App() {
             </div>
 
             {/* RECOMMENDED SKILLS */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mt-6">
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 mt-6 shadow-lg">
 
-              <h3 className="text-xl font-semibold text-cyan-400">
+              <h3 className="text-xl font-semibold text-cyan-600">
                 Recommended Skills
               </h3>
 
@@ -883,7 +939,7 @@ function App() {
                   (skill, index) => (
                     <span
                       key={index}
-                      className="bg-slate-800 px-4 py-2 rounded-full text-sm"
+                      className="bg-cyan-50 border border-cyan-300 px-4 py-2 rounded-full text-sm text-cyan-700 font-medium"
                     >
                       {skill}
                     </span>
@@ -905,20 +961,24 @@ function App() {
 
             <div className="mb-6">
 
-              <h2 className="text-3xl font-bold">
+              <p className="text-purple-600 font-bold mb-2 tracking-wider">
+                CAREER OPPORTUNITIES
+              </p>
+
+              <h2 className="text-3xl font-bold text-gray-900">
                 Matching Jobs
               </h2>
 
-              <p className="text-slate-400 mt-2">
+              <p className="text-gray-600 mt-2">
                 Jobs ranked according to your resume skills.
               </p>
 
             </div>
 
             {/* SEARCH & FILTER */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-8">
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 mb-8 shadow-lg">
 
-              <h3 className="text-xl font-semibold mb-5">
+              <h3 className="text-xl font-semibold mb-5 text-gray-900">
                 Search & Filter Jobs
               </h3>
 
@@ -926,7 +986,8 @@ function App() {
 
                 {/* SEARCH */}
                 <div>
-                  <label className="text-sm text-slate-400">
+
+                  <label className="text-sm text-gray-700 font-medium">
                     Search
                   </label>
 
@@ -937,13 +998,15 @@ function App() {
                     onChange={(e) =>
                       setSearchTerm(e.target.value)
                     }
-                    className="mt-2 w-full rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl bg-gray-50 border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 placeholder:text-gray-500 text-gray-900"
                   />
+
                 </div>
 
                 {/* LOCATION */}
                 <div>
-                  <label className="text-sm text-slate-400">
+
+                  <label className="text-sm text-gray-700 font-medium">
                     Location
                   </label>
 
@@ -952,7 +1015,7 @@ function App() {
                     onChange={(e) =>
                       setLocationFilter(e.target.value)
                     }
-                    className="mt-2 w-full rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl bg-gray-50 border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 text-gray-900"
                   >
 
                     <option value="">
@@ -971,11 +1034,13 @@ function App() {
                     )}
 
                   </select>
+
                 </div>
 
                 {/* JOB TYPE */}
                 <div>
-                  <label className="text-sm text-slate-400">
+
+                  <label className="text-sm text-gray-700 font-medium">
                     Job Type
                   </label>
 
@@ -984,7 +1049,7 @@ function App() {
                     onChange={(e) =>
                       setJobTypeFilter(e.target.value)
                     }
-                    className="mt-2 w-full rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl bg-gray-50 border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 text-gray-900"
                   >
 
                     <option value="">
@@ -1003,11 +1068,13 @@ function App() {
                     )}
 
                   </select>
+
                 </div>
 
                 {/* MINIMUM MATCH */}
                 <div>
-                  <label className="text-sm text-slate-400">
+
+                  <label className="text-sm text-gray-700 font-medium">
                     Minimum Match
                   </label>
 
@@ -1018,7 +1085,7 @@ function App() {
                         Number(e.target.value)
                       )
                     }
-                    className="mt-2 w-full rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl bg-gray-50 border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 text-gray-900"
                   >
 
                     <option value={0}>
@@ -1050,6 +1117,7 @@ function App() {
                     </option>
 
                   </select>
+
                 </div>
 
               </div>
@@ -1057,21 +1125,27 @@ function App() {
               {/* FILTER ACTIONS */}
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
 
-                <p className="text-slate-400 text-sm">
+                <p className="text-gray-600 text-sm">
+
                   Showing{" "}
-                  <span className="text-white font-semibold">
+
+                  <span className="text-gray-900 font-semibold">
                     {filteredJobs.length}
-                  </span>{" "}
-                  of{" "}
-                  <span className="text-white font-semibold">
+                  </span>
+
+                  {" "}of{" "}
+
+                  <span className="text-gray-900 font-semibold">
                     {jobs.length}
-                  </span>{" "}
-                  jobs
+                  </span>
+
+                  {" "}jobs
+
                 </p>
 
                 <button
                   onClick={clearFilters}
-                  className="border border-slate-700 hover:bg-slate-800 rounded-lg px-5 py-2"
+                  className="border border-gray-300 hover:bg-gray-100 rounded-xl px-5 py-2 transition-all text-gray-700 font-medium"
                 >
                   Clear Filters
                 </button>
@@ -1082,19 +1156,19 @@ function App() {
 
             {/* NO RESULTS */}
             {filteredJobs.length === 0 && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center">
+              <div className="bg-white border border-gray-200 rounded-3xl p-10 text-center shadow-lg">
 
-                <h3 className="text-xl font-semibold">
+                <h3 className="text-xl font-semibold text-gray-900">
                   No jobs found
                 </h3>
 
-                <p className="text-slate-400 mt-2">
+                <p className="text-gray-600 mt-2">
                   Try changing your search or filters.
                 </p>
 
                 <button
                   onClick={clearFilters}
-                  className="mt-5 bg-blue-600 hover:bg-blue-700 rounded-lg px-5 py-2"
+                  className="mt-5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-5 py-2 font-medium"
                 >
                   Clear Filters
                 </button>
@@ -1102,9 +1176,7 @@ function App() {
               </div>
             )}
 
-            {/* =================================================
-                JOB CARDS
-            ================================================= */}
+            {/* JOB CARDS */}
             {filteredJobs.length > 0 && (
               <div className="grid md:grid-cols-2 gap-6">
 
@@ -1116,7 +1188,7 @@ function App() {
                       job._id ||
                       `${job.title}-${job.company}`
                     }
-                    className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-purple-500 transition"
+                    className="bg-white border border-gray-200 rounded-3xl p-6 shadow-lg hover:border-blue-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                   >
 
                     {/* TITLE + MATCH */}
@@ -1124,17 +1196,17 @@ function App() {
 
                       <div>
 
-                        <h3 className="text-xl font-semibold">
+                        <h3 className="text-xl font-semibold text-gray-900">
                           {job.title}
                         </h3>
 
-                        <p className="text-slate-400 mt-1">
+                        <p className="text-blue-600 mt-1 font-medium">
                           {job.company}
                         </p>
 
                       </div>
 
-                      <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 text-green-400 font-bold whitespace-nowrap">
+                      <div className="bg-green-100 border border-green-300 rounded-xl px-3 py-2 text-green-700 font-bold whitespace-nowrap">
                         {job.matchPercentage || 0}%
                       </div>
 
@@ -1142,7 +1214,7 @@ function App() {
 
                     {/* DESCRIPTION */}
                     {job.description && (
-                      <p className="text-slate-400 text-sm leading-6 mt-5">
+                      <p className="text-gray-600 text-sm leading-6 mt-5">
                         {job.description}
                       </p>
                     )}
@@ -1150,11 +1222,11 @@ function App() {
                     {/* LOCATION + TYPE */}
                     <div className="mt-5 flex gap-3 flex-wrap">
 
-                      <span className="bg-slate-800 rounded-full px-3 py-1 text-sm text-slate-300">
+                      <span className="bg-gray-100 border border-gray-300 rounded-full px-3 py-1 text-sm text-gray-700">
                         📍 {job.location || "Not specified"}
                       </span>
 
-                      <span className="bg-slate-800 rounded-full px-3 py-1 text-sm text-slate-300">
+                      <span className="bg-gray-100 border border-gray-300 rounded-full px-3 py-1 text-sm text-gray-700">
                         💼 {job.jobType || "Not specified"}
                       </span>
 
@@ -1163,7 +1235,7 @@ function App() {
                     {/* MATCHED SKILLS */}
                     <div className="mt-6">
 
-                      <h4 className="text-sm font-semibold text-green-400">
+                      <h4 className="text-sm font-semibold text-green-600">
                         Matched Skills
                       </h4>
 
@@ -1174,14 +1246,14 @@ function App() {
                             (skill, index) => (
                               <span
                                 key={index}
-                                className="bg-green-500/10 text-green-400 border border-green-500/20 rounded-full px-3 py-1 text-xs"
+                                className="bg-green-100 text-green-700 border border-green-300 rounded-full px-3 py-1 text-xs font-medium"
                               >
                                 ✓ {skill}
                               </span>
                             )
                           )
                         ) : (
-                          <span className="text-slate-500 text-sm">
+                          <span className="text-gray-500 text-sm">
                             No matched skills
                           </span>
                         )}
@@ -1194,7 +1266,7 @@ function App() {
                     {job.missingSkills?.length > 0 && (
                       <div className="mt-6">
 
-                        <h4 className="text-sm font-semibold text-yellow-400">
+                        <h4 className="text-sm font-semibold text-yellow-600">
                           Skills to Improve
                         </h4>
 
@@ -1204,7 +1276,7 @@ function App() {
                             (skill, index) => (
                               <span
                                 key={index}
-                                className="bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-full px-3 py-1 text-xs"
+                                className="bg-yellow-100 text-yellow-700 border border-yellow-300 rounded-full px-3 py-1 text-xs font-medium"
                               >
                                 + {skill}
                               </span>
@@ -1216,16 +1288,14 @@ function App() {
                       </div>
                     )}
 
-                    {/* =================================================
-                        ACTION BUTTONS
-                    ================================================= */}
+                    {/* ACTION BUTTONS */}
                     <div className="mt-7 flex gap-3">
 
                       <button
                         onClick={() =>
                           handleViewDetails(job)
                         }
-                        className="flex-1 border border-slate-700 hover:bg-slate-800 rounded-lg py-3 font-semibold"
+                        className="flex-1 border border-gray-300 hover:bg-gray-100 rounded-xl py-3 font-semibold transition-all text-gray-700"
                       >
                         View Details
                       </button>
@@ -1234,7 +1304,7 @@ function App() {
                         onClick={() =>
                           handleApply(job)
                         }
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg py-3 font-semibold"
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl py-3 font-semibold transition-all"
                       >
                         Apply Now
                       </button>
@@ -1257,26 +1327,28 @@ function App() {
           JOB DETAILS MODAL
       ===================================================== */}
       {selectedJob && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
 
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-700 rounded-2xl p-7">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 rounded-3xl p-7 shadow-2xl">
 
             {/* MODAL HEADER */}
             <div className="flex justify-between items-start gap-4">
 
               <div>
-                <h2 className="text-3xl font-bold">
+
+                <h2 className="text-3xl font-bold text-gray-900">
                   {selectedJob.title}
                 </h2>
 
-                <p className="text-blue-400 text-lg mt-2">
+                <p className="text-blue-600 text-lg mt-2 font-medium">
                   {selectedJob.company}
                 </p>
+
               </div>
 
               <button
                 onClick={handleCloseDetails}
-                className="text-slate-400 hover:text-white text-2xl"
+                className="text-gray-500 hover:text-gray-900 text-2xl"
               >
                 ✕
               </button>
@@ -1284,13 +1356,13 @@ function App() {
             </div>
 
             {/* MATCH */}
-            <div className="mt-6 bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+            <div className="mt-6 bg-green-50 border border-green-300 rounded-2xl p-4">
 
-              <p className="text-green-400 font-semibold">
+              <p className="text-green-700 font-semibold">
                 Resume Match
               </p>
 
-              <p className="text-3xl font-bold text-green-400 mt-1">
+              <p className="text-3xl font-bold text-green-700 mt-1">
                 {selectedJob.matchPercentage || 0}%
               </p>
 
@@ -1299,28 +1371,32 @@ function App() {
             {/* BASIC INFO */}
             <div className="grid sm:grid-cols-2 gap-4 mt-6">
 
-              <div className="bg-slate-950 rounded-xl p-4">
-                <p className="text-slate-500 text-sm">
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
+
+                <p className="text-gray-600 text-sm font-medium">
                   Location
                 </p>
 
-                <p className="text-slate-200 mt-1">
+                <p className="text-gray-900 mt-1">
                   📍{" "}
                   {selectedJob.location ||
                     "Not specified"}
                 </p>
+
               </div>
 
-              <div className="bg-slate-950 rounded-xl p-4">
-                <p className="text-slate-500 text-sm">
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
+
+                <p className="text-gray-600 text-sm font-medium">
                   Job Type
                 </p>
 
-                <p className="text-slate-200 mt-1">
+                <p className="text-gray-900 mt-1">
                   💼{" "}
                   {selectedJob.jobType ||
                     "Not specified"}
                 </p>
+
               </div>
 
             </div>
@@ -1328,11 +1404,11 @@ function App() {
             {/* DESCRIPTION */}
             <div className="mt-7">
 
-              <h3 className="text-xl font-semibold">
+              <h3 className="text-xl font-semibold text-gray-900">
                 Job Description
               </h3>
 
-              <p className="text-slate-400 leading-7 mt-3">
+              <p className="text-gray-700 leading-7 mt-3">
                 {selectedJob.description ||
                   "No job description available."}
               </p>
@@ -1342,7 +1418,7 @@ function App() {
             {/* MATCHED SKILLS */}
             <div className="mt-7">
 
-              <h3 className="text-xl font-semibold text-green-400">
+              <h3 className="text-xl font-semibold text-green-600">
                 Matched Skills
               </h3>
 
@@ -1353,14 +1429,14 @@ function App() {
                     (skill, index) => (
                       <span
                         key={index}
-                        className="bg-green-500/10 text-green-400 border border-green-500/20 rounded-full px-3 py-2 text-sm"
+                        className="bg-green-100 text-green-700 border border-green-300 rounded-full px-3 py-2 text-sm font-medium"
                       >
                         ✓ {skill}
                       </span>
                     )
                   )
                 ) : (
-                  <span className="text-slate-500">
+                  <span className="text-gray-500">
                     No matched skills
                   </span>
                 )}
@@ -1373,7 +1449,7 @@ function App() {
             {selectedJob.missingSkills?.length > 0 && (
               <div className="mt-7">
 
-                <h3 className="text-xl font-semibold text-yellow-400">
+                <h3 className="text-xl font-semibold text-yellow-600">
                   Skills to Improve
                 </h3>
 
@@ -1383,7 +1459,7 @@ function App() {
                     (skill, index) => (
                       <span
                         key={index}
-                        className="bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-full px-3 py-2 text-sm"
+                        className="bg-yellow-100 text-yellow-700 border border-yellow-300 rounded-full px-3 py-2 text-sm font-medium"
                       >
                         + {skill}
                       </span>
@@ -1400,7 +1476,7 @@ function App() {
 
               <button
                 onClick={handleCloseDetails}
-                className="flex-1 border border-slate-700 hover:bg-slate-800 rounded-lg py-3 font-semibold"
+                className="flex-1 border border-gray-300 hover:bg-gray-100 rounded-xl py-3 font-semibold transition-all text-gray-700"
               >
                 Close
               </button>
@@ -1409,7 +1485,7 @@ function App() {
                 onClick={() =>
                   handleApply(selectedJob)
                 }
-                className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg py-3 font-semibold"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl py-3 font-semibold transition-all"
               >
                 Apply Now
               </button>
