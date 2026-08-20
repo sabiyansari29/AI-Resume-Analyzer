@@ -1,10 +1,6 @@
 import Resume from "../models/resume.model.js";
 import Groq from "groq-sdk";
 
-// ========================================
-// GROQ CLIENT
-// ========================================
-
 const getGroqClient = () => {
     if (!process.env.GROQ_API_KEY) {
         throw new Error("GROQ_API_KEY is missing");
@@ -15,17 +11,20 @@ const getGroqClient = () => {
     });
 };
 
+const ensureArray = (value) => {
+    if (Array.isArray(value)) {
+        return value.filter(
+            (item) =>
+                typeof item === "string" &&
+                item.trim() !== ""
+        );
+    }
 
-// ========================================
-// ANALYZE RESUME WITH AI
-// ========================================
+    return [];
+};
 
 export const analyzeResumeWithAI = async (req, res) => {
     try {
-
-        // --------------------------------
-        // 1. Get Resume ID
-        // --------------------------------
 
         const { resumeId } = req.params;
 
@@ -34,11 +33,6 @@ export const analyzeResumeWithAI = async (req, res) => {
                 message: "Resume ID is required"
             });
         }
-
-
-        // --------------------------------
-        // 2. Find Resume
-        // --------------------------------
 
         const resume = await Resume.findOne({
             _id: resumeId,
@@ -51,11 +45,6 @@ export const analyzeResumeWithAI = async (req, res) => {
             });
         }
 
-
-        // --------------------------------
-        // 3. Check Resume Text
-        // --------------------------------
-
         if (
             !resume.resumeText ||
             resume.resumeText.trim() === ""
@@ -65,90 +54,175 @@ export const analyzeResumeWithAI = async (req, res) => {
             });
         }
 
-
-        // --------------------------------
-        // 4. Create Groq Client
-        // --------------------------------
-
         const groq = getGroqClient();
 
-
-        // --------------------------------
-        // 5. AI Prompt
-        // --------------------------------
-
         const systemPrompt = `
-You are an expert professional resume analyzer.
+You are an expert professional resume analyzer,
+ATS evaluator and career advisor.
 
-Analyze the given resume carefully.
+Analyze the resume carefully.
 
 Return ONLY valid JSON.
 
 Do NOT use markdown.
 Do NOT use code fences.
-Do NOT add any explanation outside JSON.
+Do NOT add text outside JSON.
+
+You MUST return ALL fields.
 
 Return exactly this structure:
 
 {
   "summary": "short professional summary",
+
+  "atsScore": 75,
+
+  "atsScoreReason": [
+    "reason explaining the ATS score",
+    "reason explaining the ATS score",
+    "reason explaining the ATS score"
+  ],
+
+  "atsStrengths": [
+    "ATS strength",
+    "ATS strength",
+    "ATS strength"
+  ],
+
+  "atsIssues": [
+    "ATS issue",
+    "ATS issue",
+    "ATS issue"
+  ],
+
+  "missingSkills": [
+    "missing skill",
+    "missing skill",
+    "missing skill"
+  ],
+
+  "improvementSuggestions": [
+    "specific improvement",
+    "specific improvement",
+    "specific improvement",
+    "specific improvement"
+  ],
+
   "strengths": [
-    "strength 1",
-    "strength 2",
-    "strength 3"
+    "resume strength",
+    "resume strength",
+    "resume strength"
   ],
+
   "weaknesses": [
-    "weakness 1",
-    "weakness 2",
-    "weakness 3"
+    "resume weakness",
+    "resume weakness",
+    "resume weakness"
   ],
+
   "suggestions": [
-    "suggestion 1",
-    "suggestion 2",
-    "suggestion 3"
+    "career suggestion",
+    "career suggestion",
+    "career suggestion"
   ],
+
   "recommendedSkills": [
-    "skill 1",
-    "skill 2",
-    "skill 3"
+    "recommended skill",
+    "recommended skill",
+    "recommended skill",
+    "recommended skill",
+    "recommended skill"
   ]
 }
 
-Rules:
+ATS SCORE RULES:
 
-1. summary must be a short professional summary.
-2. strengths must contain useful strengths found in the resume.
-3. weaknesses must contain realistic areas for improvement.
-4. suggestions must contain practical resume/career suggestions.
-5. recommendedSkills must contain skills useful for improving the candidate profile.
-6. Do not invent information that is clearly unrelated to the resume.
-7. Always return valid JSON.
+Calculate a realistic ATS score from 0 to 100.
+
+Do NOT automatically give a high score.
+
+Do NOT return 0 unless the resume is empty,
+unreadable, or contains almost no useful information.
+
+Evaluate:
+
+- Contact information
+- Professional summary
+- Education
+- Technical skills
+- Work experience
+- Internship
+- Projects
+- Certifications
+- Relevant keywords
+- Action verbs
+- Quantifiable achievements
+- Resume structure
+- ATS-friendly formatting
+- Readability
+- Career relevance
+
+General scoring:
+
+90-100 = Excellent
+80-89 = Very Good
+70-79 = Good
+60-69 = Average
+50-59 = Needs Improvement
+0-49 = Needs Major Improvement
+
+atsScoreReason must explain the actual reasons for the score.
+
+atsStrengths must contain actual ATS-friendly strengths.
+
+atsIssues must contain actual ATS-related problems.
+
+missingSkills must contain useful skills that are NOT already clearly present.
+
+Do NOT mark an existing skill as missing.
+
+improvementSuggestions must contain practical steps that can improve the ATS score.
+
+Do NOT invent:
+
+- experience
+- internships
+- education
+- certifications
+- projects
+- achievements
+- skills
+
+Analyze ONLY the supplied resume.
+
+Keep every field specific to the resume.
+
+ALL fields are mandatory.
+
+Always return valid JSON.
 `;
 
-
         const userPrompt = `
-Analyze the following resume:
+Analyze this resume carefully.
 
---------------------------------
-RESUME
---------------------------------
+Calculate the ATS score based ONLY on the actual resume.
+
+Make sure every ATS field is returned.
+
+----------------------------------------
+RESUME TEXT
+----------------------------------------
 
 ${resume.resumeText}
 
---------------------------------
+----------------------------------------
 END RESUME
---------------------------------
+----------------------------------------
 `;
-
-
-        // --------------------------------
-        // 6. Call Groq
-        // --------------------------------
 
         const completion =
             await groq.chat.completions.create({
 
-                // Current Groq production model
                 model: "openai/gpt-oss-120b",
 
                 messages: [
@@ -162,23 +236,15 @@ END RESUME
                     }
                 ],
 
-                temperature: 0.2,
+                temperature: 0.1,
 
-                // Force JSON response
                 response_format: {
                     type: "json_object"
                 }
-
             });
-
-
-        // --------------------------------
-        // 7. Get AI Response
-        // --------------------------------
 
         const aiResponse =
             completion.choices?.[0]?.message?.content;
-
 
         if (!aiResponse) {
             return res.status(500).json({
@@ -186,30 +252,20 @@ END RESUME
             });
         }
 
-
-        console.log(
-            "AI Response:",
-            aiResponse
-        );
-
-
-        // --------------------------------
-        // 8. Parse JSON
-        // --------------------------------
+        console.log("RAW AI RESPONSE:");
+        console.log(aiResponse);
 
         let analysis;
 
         try {
-
             analysis = JSON.parse(
                 aiResponse.trim()
             );
-
-        } catch (parseError) {
+        } catch (error) {
 
             console.log(
                 "AI JSON Parse Error:",
-                parseError.message
+                error.message
             );
 
             console.log(
@@ -222,38 +278,87 @@ END RESUME
             });
         }
 
+        let atsScore = Number(
+            analysis.atsScore
+        );
 
-        // --------------------------------
-        // 9. Make Sure Required Fields Exist
-        // --------------------------------
+        if (!Number.isFinite(atsScore)) {
+            atsScore = 0;
+        }
+
+        atsScore = Math.round(atsScore);
+
+        atsScore = Math.max(
+            0,
+            Math.min(
+                100,
+                atsScore
+            )
+        );
+
+        analysis.atsScore = atsScore;
 
         analysis.summary =
-            analysis.summary || "";
+            typeof analysis.summary === "string"
+                ? analysis.summary
+                : "Resume analysis completed.";
+
+        analysis.atsScoreReason =
+            ensureArray(
+                analysis.atsScoreReason
+            );
+
+        analysis.atsStrengths =
+            ensureArray(
+                analysis.atsStrengths
+            );
+
+        analysis.atsIssues =
+            ensureArray(
+                analysis.atsIssues
+            );
+
+        analysis.missingSkills =
+            ensureArray(
+                analysis.missingSkills
+            );
+
+        analysis.improvementSuggestions =
+            ensureArray(
+                analysis.improvementSuggestions
+            );
 
         analysis.strengths =
-            Array.isArray(analysis.strengths)
-                ? analysis.strengths
-                : [];
+            ensureArray(
+                analysis.strengths
+            );
 
         analysis.weaknesses =
-            Array.isArray(analysis.weaknesses)
-                ? analysis.weaknesses
-                : [];
+            ensureArray(
+                analysis.weaknesses
+            );
 
         analysis.suggestions =
-            Array.isArray(analysis.suggestions)
-                ? analysis.suggestions
-                : [];
+            ensureArray(
+                analysis.suggestions
+            );
 
         analysis.recommendedSkills =
-            Array.isArray(analysis.recommendedSkills)
-                ? analysis.recommendedSkills
-                : [];
+            ensureArray(
+                analysis.recommendedSkills
+            );
 
+        console.log(
+            "FINAL ANALYSIS:"
+        );
 
-        // --------------------------------
-        // 10. Send Response
-        // --------------------------------
+        console.log(
+            JSON.stringify(
+                analysis,
+                null,
+                2
+            )
+        );
 
         return res.status(200).json({
 
@@ -263,20 +368,50 @@ END RESUME
             resumeId:
                 resume._id,
 
-            analysis
+            analysis: {
+                summary:
+                    analysis.summary,
 
+                atsScore:
+                    analysis.atsScore,
+
+                atsScoreReason:
+                    analysis.atsScoreReason,
+
+                atsStrengths:
+                    analysis.atsStrengths,
+
+                atsIssues:
+                    analysis.atsIssues,
+
+                missingSkills:
+                    analysis.missingSkills,
+
+                improvementSuggestions:
+                    analysis.improvementSuggestions,
+
+                strengths:
+                    analysis.strengths,
+
+                weaknesses:
+                    analysis.weaknesses,
+
+                suggestions:
+                    analysis.suggestions,
+
+                recommendedSkills:
+                    analysis.recommendedSkills
+            }
         });
 
     } catch (error) {
 
         console.log(
-            "AI analysis error:",
-            error.message
+            "AI ANALYSIS ERROR:",
+            error
         );
 
-        // Groq specific error
         if (error?.status) {
-
             console.log(
                 "Groq status:",
                 error.status
@@ -284,10 +419,10 @@ END RESUME
 
             console.log(
                 "Groq error:",
-                error.error || error.message
+                error.error ||
+                error.message
             );
         }
-
 
         return res.status(500).json({
 

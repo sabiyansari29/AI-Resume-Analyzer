@@ -114,7 +114,6 @@ function App() {
       setEmail("");
       setPassword("");
 
-      // No successful login message
       setMessage("");
       setLoginError("");
     } catch (error) {
@@ -269,9 +268,15 @@ function App() {
         analysisResponse.data
       );
 
-      setAnalysis(
-        analysisResponse.data.analysis
+      const aiAnalysis =
+        analysisResponse.data?.analysis || {};
+
+      console.log(
+        "AI analysis object:",
+        aiAnalysis
       );
+
+      setAnalysis(aiAnalysis);
 
       setMessage(
         "Resume uploaded and analyzed successfully!"
@@ -473,12 +478,53 @@ function App() {
   ]);
 
   // =====================================================
+  // ATS SCORE
+  // =====================================================
+  const atsScore = Number(analysis?.atsScore ?? 0);
+
+  const atsScoreReason =
+    Array.isArray(analysis?.atsScoreReason)
+      ? analysis.atsScoreReason
+      : [];
+
+  const atsStrengths =
+    Array.isArray(analysis?.atsStrengths)
+      ? analysis.atsStrengths
+      : [];
+
+  const atsIssues =
+    Array.isArray(analysis?.atsIssues)
+      ? analysis.atsIssues
+      : [];
+
+  const missingSkills =
+    Array.isArray(analysis?.missingSkills)
+      ? analysis.missingSkills
+      : [];
+
+  const improvementSuggestions =
+    Array.isArray(
+      analysis?.improvementSuggestions
+    )
+      ? analysis.improvementSuggestions
+      : [];
+
+  // =====================================================
+  // ATS SCORE LABEL
+  // =====================================================
+  const getAtsLabel = (score) => {
+    if (score >= 85) return "Excellent";
+    if (score >= 70) return "Good";
+    if (score >= 50) return "Needs Improvement";
+    return "Needs Major Improvement";
+  };
+
+  // =====================================================
   // REGISTER PAGE
   // =====================================================
   if (!loggedIn && page === "register") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-indigo-100 text-gray-900 flex items-center justify-center px-4">
-
         <div className="w-full max-w-md">
 
           <div className="text-center mb-8">
@@ -663,7 +709,6 @@ function App() {
               Login
             </button>
 
-            {/* RED LOGIN ERROR */}
             {loginError && (
               <div className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700">
                 ⚠ {loginError}
@@ -698,9 +743,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 text-gray-900">
 
-      {/* =================================================
-          NAVBAR
-      ================================================= */}
+      {/* NAVBAR */}
       <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-xl sticky top-0 z-40 shadow-sm">
 
         <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
@@ -731,9 +774,7 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-6 py-12">
 
-        {/* =================================================
-            HERO
-        ================================================= */}
+        {/* HERO */}
         <div className="mb-10">
 
           <p className="text-blue-600 font-bold mb-3 tracking-wider">
@@ -746,15 +787,13 @@ function App() {
 
           <p className="text-gray-600 mt-4 max-w-2xl text-lg">
             Upload your resume and get AI-powered
-            insights, skill recommendations and
-            matching job opportunities.
+            insights, ATS scoring, skill recommendations
+            and matching job opportunities.
           </p>
 
         </div>
 
-        {/* =================================================
-            UPLOAD CARD
-        ================================================= */}
+        {/* UPLOAD CARD */}
         <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-lg">
 
           <div className="flex items-center gap-4 mb-2">
@@ -796,7 +835,6 @@ function App() {
 
           </div>
 
-          {/* UPLOAD */}
           <button
             onClick={handleUpload}
             disabled={loading}
@@ -807,7 +845,6 @@ function App() {
               : "Upload & Analyze"}
           </button>
 
-          {/* FIND JOBS */}
           <button
             onClick={handleFindJobs}
             disabled={jobLoading || !resumeId}
@@ -836,7 +873,286 @@ function App() {
               AI Resume Analysis
             </h2>
 
-            {/* SUMMARY */}
+            {/* =================================================
+                ATS SCORE
+            ================================================= */}
+            <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-lg mb-6">
+
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+
+                <div>
+
+                  <p className="text-sm font-bold text-blue-600 tracking-wider uppercase">
+                    ATS Resume Score
+                  </p>
+
+                  <h3 className="text-5xl font-bold text-gray-900 mt-3">
+                    {atsScore}
+                    <span className="text-2xl text-gray-500">
+                      /100
+                    </span>
+                  </h3>
+
+                  <p className="text-xl font-semibold text-gray-800 mt-3">
+                    {getAtsLabel(atsScore)}
+                  </p>
+
+                  <p className="text-gray-600 mt-3 max-w-2xl leading-7">
+                    This is an estimated resume-quality and
+                    ATS-friendliness score based on the content,
+                    structure, keywords, skills and experience
+                    visible in your resume.
+                  </p>
+
+                </div>
+
+                <div className="w-40 h-40 rounded-full border-8 border-blue-100 flex items-center justify-center bg-blue-50">
+
+                  <div className="text-center">
+
+                    <p className="text-4xl font-bold text-blue-600">
+                      {atsScore}
+                    </p>
+
+                    <p className="text-sm text-gray-500">
+                      ATS Score
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* =================================================
+                ATS REASONS
+            ================================================= */}
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-lg mb-6">
+
+              <h3 className="text-xl font-semibold text-blue-600">
+                Why This ATS Score?
+              </h3>
+
+              {atsScoreReason.length > 0 ? (
+                <ul className="mt-5 space-y-3">
+
+                  {atsScoreReason.map(
+                    (item, index) => (
+                      <li
+                        key={index}
+                        className="flex gap-3 text-gray-700 leading-6"
+                      >
+                        <span className="text-blue-600 font-bold">
+                          {index + 1}.
+                        </span>
+
+                        <span>
+                          {item}
+                        </span>
+                      </li>
+                    )
+                  )}
+
+                </ul>
+              ) : (
+                <p className="mt-4 text-gray-500">
+                  No ATS score explanation available.
+                </p>
+              )}
+
+            </div>
+
+            {/* =================================================
+                ATS STRENGTHS + ISSUES
+            ================================================= */}
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+
+              {/* ATS STRENGTHS */}
+              <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-lg">
+
+                <div className="flex items-center gap-3">
+
+                  <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                    ✓
+                  </div>
+
+                  <h3 className="text-xl font-semibold text-green-600">
+                    ATS Strengths
+                  </h3>
+
+                </div>
+
+                {atsStrengths.length > 0 ? (
+                  <ul className="mt-5 space-y-4">
+
+                    {atsStrengths.map(
+                      (item, index) => (
+                        <li
+                          key={index}
+                          className="flex gap-3 text-gray-700 text-sm leading-6"
+                        >
+                          <span className="text-green-600 font-bold">
+                            ✓
+                          </span>
+
+                          <span>
+                            {item}
+                          </span>
+                        </li>
+                      )
+                    )}
+
+                  </ul>
+                ) : (
+                  <p className="mt-5 text-gray-500 text-sm">
+                    No ATS strengths available.
+                  </p>
+                )}
+
+              </div>
+
+              {/* ATS ISSUES */}
+              <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-lg">
+
+                <div className="flex items-center gap-3">
+
+                  <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                    !
+                  </div>
+
+                  <h3 className="text-xl font-semibold text-red-600">
+                    ATS Issues
+                  </h3>
+
+                </div>
+
+                {atsIssues.length > 0 ? (
+                  <ul className="mt-5 space-y-4">
+
+                    {atsIssues.map(
+                      (item, index) => (
+                        <li
+                          key={index}
+                          className="flex gap-3 text-gray-700 text-sm leading-6"
+                        >
+                          <span className="text-red-600 font-bold">
+                            !
+                          </span>
+
+                          <span>
+                            {item}
+                          </span>
+                        </li>
+                      )
+                    )}
+
+                  </ul>
+                ) : (
+                  <p className="mt-5 text-gray-500 text-sm">
+                    No major ATS issues detected.
+                  </p>
+                )}
+
+              </div>
+
+            </div>
+
+            {/* =================================================
+                MISSING SKILLS
+            ================================================= */}
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-lg mb-6">
+
+              <div className="flex items-center gap-3">
+
+                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 font-bold">
+                  +
+                </div>
+
+                <h3 className="text-xl font-semibold text-purple-600">
+                  Missing Skills
+                </h3>
+
+              </div>
+
+              <p className="text-gray-600 mt-3">
+                Skills that could improve your profile based
+                on your resume and career direction.
+              </p>
+
+              {missingSkills.length > 0 ? (
+                <div className="flex flex-wrap gap-3 mt-5">
+
+                  {missingSkills.map(
+                    (skill, index) => (
+                      <span
+                        key={index}
+                        className="bg-purple-50 border border-purple-300 px-4 py-2 rounded-full text-sm text-purple-700 font-medium"
+                      >
+                        + {skill}
+                      </span>
+                    )
+                  )}
+
+                </div>
+              ) : (
+                <p className="mt-5 text-gray-500">
+                  No specific missing skills were identified.
+                </p>
+              )}
+
+            </div>
+
+            {/* =================================================
+                IMPROVEMENT SUGGESTIONS
+            ================================================= */}
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-lg mb-6">
+
+              <div className="flex items-center gap-3">
+
+                <div className="w-10 h-10 rounded-xl bg-yellow-100 flex items-center justify-center">
+                  💡
+                </div>
+
+                <h3 className="text-xl font-semibold text-yellow-600">
+                  How to Improve Your ATS Score
+                </h3>
+
+              </div>
+
+              {improvementSuggestions.length > 0 ? (
+                <ul className="mt-5 space-y-4">
+
+                  {improvementSuggestions.map(
+                    (item, index) => (
+                      <li
+                        key={index}
+                        className="flex gap-3 text-gray-700 leading-6"
+                      >
+                        <span className="text-yellow-600 font-bold">
+                          {index + 1}.
+                        </span>
+
+                        <span>
+                          {item}
+                        </span>
+                      </li>
+                    )
+                  )}
+
+                </ul>
+              ) : (
+                <p className="mt-5 text-gray-500">
+                  No improvement suggestions available.
+                </p>
+              )}
+
+            </div>
+
+            {/* =================================================
+                SUMMARY
+            ================================================= */}
             <div className="bg-white border border-gray-200 rounded-3xl p-6 mb-6 shadow-lg">
 
               <h3 className="text-xl font-semibold text-blue-600">
@@ -844,12 +1160,15 @@ function App() {
               </h3>
 
               <p className="mt-3 text-gray-700 leading-7">
-                {analysis.summary}
+                {analysis.summary ||
+                  "No summary available."}
               </p>
 
             </div>
 
-            {/* THREE CARDS */}
+            {/* =================================================
+                THREE CARDS
+            ================================================= */}
             <div className="grid md:grid-cols-3 gap-6">
 
               {/* STRENGTHS */}
@@ -861,15 +1180,21 @@ function App() {
 
                 <ul className="mt-4 space-y-3">
 
-                  {analysis.strengths?.map(
-                    (item, index) => (
-                      <li
-                        key={index}
-                        className="text-gray-700 text-sm leading-6"
-                      >
-                        ✓ {item}
-                      </li>
+                  {analysis.strengths?.length > 0 ? (
+                    analysis.strengths.map(
+                      (item, index) => (
+                        <li
+                          key={index}
+                          className="text-gray-700 text-sm leading-6"
+                        >
+                          ✓ {item}
+                        </li>
+                      )
                     )
+                  ) : (
+                    <li className="text-gray-500 text-sm">
+                      No strengths available.
+                    </li>
                   )}
 
                 </ul>
@@ -885,15 +1210,21 @@ function App() {
 
                 <ul className="mt-4 space-y-3">
 
-                  {analysis.weaknesses?.map(
-                    (item, index) => (
-                      <li
-                        key={index}
-                        className="text-gray-700 text-sm leading-6"
-                      >
-                        • {item}
-                      </li>
+                  {analysis.weaknesses?.length > 0 ? (
+                    analysis.weaknesses.map(
+                      (item, index) => (
+                        <li
+                          key={index}
+                          className="text-gray-700 text-sm leading-6"
+                        >
+                          • {item}
+                        </li>
+                      )
                     )
+                  ) : (
+                    <li className="text-gray-500 text-sm">
+                      No weaknesses available.
+                    </li>
                   )}
 
                 </ul>
@@ -909,15 +1240,21 @@ function App() {
 
                 <ul className="mt-4 space-y-3">
 
-                  {analysis.suggestions?.map(
-                    (item, index) => (
-                      <li
-                        key={index}
-                        className="text-gray-700 text-sm leading-6"
-                      >
-                        • {item}
-                      </li>
+                  {analysis.suggestions?.length > 0 ? (
+                    analysis.suggestions.map(
+                      (item, index) => (
+                        <li
+                          key={index}
+                          className="text-gray-700 text-sm leading-6"
+                        >
+                          • {item}
+                        </li>
+                      )
                     )
+                  ) : (
+                    <li className="text-gray-500 text-sm">
+                      No suggestions available.
+                    </li>
                   )}
 
                 </ul>
@@ -926,7 +1263,9 @@ function App() {
 
             </div>
 
-            {/* RECOMMENDED SKILLS */}
+            {/* =================================================
+                RECOMMENDED SKILLS
+            ================================================= */}
             <div className="bg-white border border-gray-200 rounded-3xl p-6 mt-6 shadow-lg">
 
               <h3 className="text-xl font-semibold text-cyan-600">
@@ -935,15 +1274,21 @@ function App() {
 
               <div className="flex flex-wrap gap-3 mt-5">
 
-                {analysis.recommendedSkills?.map(
-                  (skill, index) => (
-                    <span
-                      key={index}
-                      className="bg-cyan-50 border border-cyan-300 px-4 py-2 rounded-full text-sm text-cyan-700 font-medium"
-                    >
-                      {skill}
-                    </span>
+                {analysis.recommendedSkills?.length > 0 ? (
+                  analysis.recommendedSkills.map(
+                    (skill, index) => (
+                      <span
+                        key={index}
+                        className="bg-cyan-50 border border-cyan-300 px-4 py-2 rounded-full text-sm text-cyan-700 font-medium"
+                      >
+                        {skill}
+                      </span>
+                    )
                   )
+                ) : (
+                  <p className="text-gray-500">
+                    No recommended skills available.
+                  </p>
                 )}
 
               </div>
@@ -1191,7 +1536,6 @@ function App() {
                     className="bg-white border border-gray-200 rounded-3xl p-6 shadow-lg hover:border-blue-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                   >
 
-                    {/* TITLE + MATCH */}
                     <div className="flex justify-between items-start gap-4">
 
                       <div>
@@ -1212,14 +1556,12 @@ function App() {
 
                     </div>
 
-                    {/* DESCRIPTION */}
                     {job.description && (
                       <p className="text-gray-600 text-sm leading-6 mt-5">
                         {job.description}
                       </p>
                     )}
 
-                    {/* LOCATION + TYPE */}
                     <div className="mt-5 flex gap-3 flex-wrap">
 
                       <span className="bg-gray-100 border border-gray-300 rounded-full px-3 py-1 text-sm text-gray-700">
@@ -1331,7 +1673,6 @@ function App() {
 
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 rounded-3xl p-7 shadow-2xl">
 
-            {/* MODAL HEADER */}
             <div className="flex justify-between items-start gap-4">
 
               <div>

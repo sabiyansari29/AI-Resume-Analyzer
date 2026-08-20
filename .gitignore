@@ -13,3 +13,5 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 server/src/uploads/*.pdf
+# Local Netlify folder
+.netlify
