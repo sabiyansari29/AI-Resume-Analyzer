@@ -1,14 +1,13 @@
 import express from "express";
-
-import { analyzeResume } from "../controllers/analysis.controller.js";
-import { protect } from "../middleware/auth.middleware.js";
+import { analyzeResumeWithAI } from "../controllers/analysis.controller.js";
+import protect from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
 router.get(
-    "/:resumeId",
+    "/analyze/:resumeId",
     protect,
-    analyzeResume
+    analyzeResumeWithAI
 );
 
 export default router;

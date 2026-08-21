@@ -5,7 +5,8 @@ import {
     getJobs,
     getJobById,
     updateJob,
-    deleteJob
+    deleteJob,
+    fetchLiveJobs
 } from "../controllers/job.controller.js";
 
 import {
@@ -20,6 +21,7 @@ const router = express.Router();
 // ==========================================
 // JOB MATCHING
 // ==========================================
+
 router.get(
     "/match/:resumeId",
     authMiddleware,
@@ -28,8 +30,20 @@ router.get(
 
 
 // ==========================================
+// FETCH LIVE JOBS FROM INDIAN API
+// ==========================================
+
+router.get(
+    "/live",
+    authMiddleware,
+    fetchLiveJobs
+);
+
+
+// ==========================================
 // CREATE JOB
 // ==========================================
+
 router.post(
     "/",
     authMiddleware,
@@ -40,6 +54,7 @@ router.post(
 // ==========================================
 // GET ALL JOBS
 // ==========================================
+
 router.get(
     "/",
     authMiddleware,
@@ -50,6 +65,7 @@ router.get(
 // ==========================================
 // GET SINGLE JOB
 // ==========================================
+
 router.get(
     "/:id",
     authMiddleware,
@@ -60,6 +76,7 @@ router.get(
 // ==========================================
 // UPDATE JOB
 // ==========================================
+
 router.put(
     "/:id",
     authMiddleware,
@@ -70,6 +87,7 @@ router.put(
 // ==========================================
 // DELETE JOB
 // ==========================================
+
 router.delete(
     "/:id",
     authMiddleware,
