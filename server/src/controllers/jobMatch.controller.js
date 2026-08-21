@@ -1,4 +1,3 @@
-
 import axios from "axios";
 import Resume from "../models/resume.model.js";
 
@@ -197,10 +196,6 @@ const containsSkill = (text, skill) => {
         );
     }
 
-    if (normalizedSkill === "ai") {
-        return /\bai\b/i.test(normalizedText);
-    }
-
     if (normalizedSkill === "js") {
         return /\bjs\b/i.test(normalizedText);
     }
@@ -223,7 +218,7 @@ const containsSkill = (text, skill) => {
 };
 
 // ======================================================
-// FIND SKILLS IN TEXT
+// FIND SKILLS
 // ======================================================
 const findSkills = (text) => {
     const foundSkills = [];
@@ -262,143 +257,126 @@ const getJobText = (job) => {
 };
 
 // ======================================================
-// GET RESUME ROLES
+// CALCULATE MATCH
 // ======================================================
-const getResumeRoles = (resumeText) => {
-    const text = normalizeText(resumeText);
+const calculateMatch = (resumeText, job) => {
 
-    const roles = [
-        {
-            keywords: [
-                "mern",
-                "react",
-                "node",
-                "express",
-                "mongodb"
-            ],
-            title: "MERN Developer"
-        },
-        {
-            keywords: [
-                "react",
-                "javascript"
-            ],
-            title: "React Developer"
-        },
-        {
-            keywords: [
-                "node",
-                "express",
-                "javascript"
-            ],
-            title: "Node.js Developer"
-        },
-        {
-            keywords: [
-                "python",
-                "django"
-            ],
-            title: "Python Developer"
-        },
-        {
-            keywords: [
-                "python",
-                "flask"
-            ],
-            title: "Python Developer"
-        },
-        {
-            keywords: [
-                "java",
-                "spring boot"
-            ],
-            title: "Java Developer"
-        },
-        {
-            keywords: [
-                "machine learning",
-                "python"
-            ],
-            title: "Machine Learning Engineer"
-        },
-        {
-            keywords: [
-                "artificial intelligence",
-                "python"
-            ],
-            title: "AI Engineer"
-        },
-        {
-            keywords: [
-                "html",
-                "css",
-                "javascript",
-                "react"
-            ],
-            title: "Frontend Developer"
-        },
-        {
-            keywords: [
-                "aws",
-                "docker"
-            ],
-            title: "DevOps Engineer"
-        },
-        {
-            keywords: [
-                "sql",
-                "python"
-            ],
-            title: "Data Analyst"
-        },
-        {
-            keywords: [
-                "java",
-                "data structures",
-                "algorithms"
-            ],
-            title: "Software Developer"
-        }
-    ];
+    const jobText = getJobText(job);
 
-    const matchedRoles = [];
+    const resumeSkills = findSkills(resumeText);
+    const jobSkills = findSkills(jobText);
 
-    for (const role of roles) {
-        const count = role.keywords.filter((keyword) =>
-            text.includes(normalizeText(keyword))
-        ).length;
-
-        if (count >= 1) {
-            matchedRoles.push({
-                title: role.title,
-                score: count
-            });
-        }
-    }
-
-    matchedRoles.sort(
-        (a, b) => b.score - a.score
+    const matchedSkills = resumeSkills.filter(
+        (skill) => jobSkills.includes(skill)
     );
 
-    const uniqueRoles = [];
+    const missingSkills = jobSkills.filter(
+        (skill) => !resumeSkills.includes(skill)
+    );
 
-    for (const role of matchedRoles) {
-        if (!uniqueRoles.includes(role.title)) {
-            uniqueRoles.push(role.title);
+    // --------------------------------------------------
+    // SKILL SCORE
+    // --------------------------------------------------
+    let skillScore = 0;
+
+    if (jobSkills.length > 0) {
+        skillScore =
+            (matchedSkills.length / jobSkills.length) * 100;
+    }
+
+    // --------------------------------------------------
+    // TITLE SCORE
+    // --------------------------------------------------
+    const resumeNormalized = normalizeText(resumeText);
+
+    const title = normalizeText(
+        `${job.title || ""} ${job.job_title || ""}`
+    );
+
+    const titleWords = title
+        .split(" ")
+        .filter((word) => word.length >= 3);
+
+    let titleMatches = 0;
+
+    for (const word of titleWords) {
+        if (resumeNormalized.includes(word)) {
+            titleMatches++;
         }
     }
 
-    if (uniqueRoles.length === 0) {
-        uniqueRoles.push("Software Developer");
+    let titleScore = 0;
+
+    if (titleWords.length > 0) {
+        titleScore =
+            (titleMatches / titleWords.length) * 100;
     }
 
-    return uniqueRoles.slice(0, 4);
+    // --------------------------------------------------
+    // KEYWORD SCORE
+    // --------------------------------------------------
+    const resumeWords = new Set(
+        resumeNormalized
+            .split(/\s+/)
+            .filter((word) => word.length >= 3)
+    );
+
+    const jobWords = new Set(
+        normalizeText(jobText)
+            .split(/\s+/)
+            .filter((word) => word.length >= 3)
+    );
+
+    let commonWords = 0;
+
+    for (const word of jobWords) {
+        if (resumeWords.has(word)) {
+            commonWords++;
+        }
+    }
+
+    let keywordScore = 0;
+
+    if (jobWords.size > 0) {
+        keywordScore =
+            (commonWords / jobWords.size) * 100;
+    }
+
+    // --------------------------------------------------
+    // FINAL SCORE
+    // --------------------------------------------------
+    let finalScore;
+
+    if (jobSkills.length > 0) {
+        finalScore =
+            skillScore * 0.70 +
+            titleScore * 0.20 +
+            keywordScore * 0.10;
+    } else {
+        finalScore =
+            titleScore * 0.70 +
+            keywordScore * 0.30;
+    }
+
+    finalScore = Math.round(
+        Math.max(
+            0,
+            Math.min(100, finalScore)
+        )
+    );
+
+    return {
+        matchPercentage: finalScore,
+        matchedSkills,
+        missingSkills
+    };
 };
 
 // ======================================================
-// GET LOCATION FROM RESUME
+// GET RESUME LOCATION
 // ======================================================
 const getResumeLocation = (resumeText) => {
+
     const text = normalizeText(resumeText);
 
     const locations = [
@@ -439,170 +417,30 @@ const getResumeLocation = (resumeText) => {
 };
 
 // ======================================================
-// CALCULATE MATCH PERCENTAGE
+// FETCH LIVE JOBS
+// ONLY ONE EXTERNAL API REQUEST
 // ======================================================
-const calculateMatch = (
-    resumeText,
-    job
-) => {
-    const jobText = getJobText(job);
+const fetchLiveJobs = async (resumeText) => {
 
-    const resumeSkills =
-        findSkills(resumeText);
+    const resumeLocation =
+        getResumeLocation(resumeText);
 
-    const jobSkills =
-        findSkills(jobText);
-
-    const matchedSkills =
-        resumeSkills.filter((skill) =>
-            jobSkills.includes(skill)
-        );
-
-    const missingSkills =
-        jobSkills.filter(
-            (skill) =>
-                !resumeSkills.includes(skill)
-        );
-
-    // --------------------------------------------------
-    // SKILL SCORE
-    // --------------------------------------------------
-    let skillScore = 0;
-
-    if (jobSkills.length > 0) {
-        skillScore =
-            (
-                matchedSkills.length /
-                jobSkills.length
-            ) * 100;
-    }
-
-    // --------------------------------------------------
-    // TITLE SCORE
-    // --------------------------------------------------
-    const resumeNormalized =
-        normalizeText(resumeText);
-
-    const title =
-        normalizeText(
-            `${job.title || ""} ${job.job_title || ""}`
-        );
-
-    const titleWords =
-        title
-            .split(" ")
-            .filter(
-                (word) =>
-                    word.length >= 3
-            );
-
-    let titleMatches = 0;
-
-    for (const word of titleWords) {
-        if (
-            resumeNormalized.includes(word)
-        ) {
-            titleMatches++;
-        }
-    }
-
-    let titleScore = 0;
-
-    if (titleWords.length > 0) {
-        titleScore =
-            (
-                titleMatches /
-                titleWords.length
-            ) * 100;
-    }
-
-    // --------------------------------------------------
-    // GENERAL KEYWORD SCORE
-    // --------------------------------------------------
-    const resumeWords = new Set(
-        resumeNormalized
-            .split(/\s+/)
-            .filter(
-                (word) =>
-                    word.length >= 3
-            )
-    );
-
-    const jobWords = new Set(
-        normalizeText(jobText)
-            .split(/\s+/)
-            .filter(
-                (word) =>
-                    word.length >= 3
-            )
-    );
-
-    let commonWords = 0;
-
-    for (const word of jobWords) {
-        if (resumeWords.has(word)) {
-            commonWords++;
-        }
-    }
-
-    let keywordScore = 0;
-
-    if (jobWords.size > 0) {
-        keywordScore =
-            (
-                commonWords /
-                jobWords.size
-            ) * 100;
-    }
-
-    // --------------------------------------------------
-    // FINAL SCORE
-    // --------------------------------------------------
-    let finalScore;
-
-    if (jobSkills.length > 0) {
-        finalScore =
-            skillScore * 0.70 +
-            titleScore * 0.20 +
-            keywordScore * 0.10;
-    } else {
-        finalScore =
-            titleScore * 0.70 +
-            keywordScore * 0.30;
-    }
-
-    finalScore = Math.round(
-        Math.max(
-            0,
-            Math.min(
-                100,
-                finalScore
-            )
-        )
-    );
-
-    return {
-        matchPercentage: finalScore,
-        matchedSkills,
-        missingSkills
-    };
-};
-
-// ======================================================
-// FETCH JOBS FROM INDIAN API
-// ======================================================
-const fetchJobs = async (
-    title,
-    location = ""
-) => {
     const params = {
-        title,
         limit: "20"
     };
 
-    if (location) {
-        params.location = location;
+    if (resumeLocation) {
+        params.location = resumeLocation;
     }
+
+    console.log(
+        "Fetching live jobs from Indian API..."
+    );
+
+    console.log(
+        "API parameters:",
+        params
+    );
 
     const response = await axios.get(
         "https://jobs.indianapi.in/jobs",
@@ -622,15 +460,13 @@ const fetchJobs = async (
 };
 
 // ======================================================
-// MATCH LIVE JOBS WITH RESUME
+// MATCH JOBS
 // ======================================================
-export const matchJobs = async (
-    req,
-    res
-) => {
+export const matchJobs = async (req, res) => {
+
     try {
-        const { resumeId } =
-            req.params;
+
+        const { resumeId } = req.params;
 
         // ==================================================
         // AUTH CHECK
@@ -684,97 +520,25 @@ export const matchJobs = async (
         }
 
         // ==================================================
-        // RESUME INFORMATION
+        // FETCH LIVE JOBS
         // ==================================================
-        const resumeText =
-            resume.resumeText;
-
-        const resumeRoles =
-            getResumeRoles(
-                resumeText
-            );
-
-        const resumeLocation =
-            getResumeLocation(
-                resumeText
+        const liveJobs =
+            await fetchLiveJobs(
+                resume.resumeText
             );
 
         console.log(
-            "Resume roles:",
-            resumeRoles
-        );
-
-        console.log(
-            "Resume location:",
-            resumeLocation || "Not detected"
+            `Indian API returned ${liveJobs.length} jobs`
         );
 
         // ==================================================
-        // FETCH REAL JOBS
+        // NO JOBS
         // ==================================================
-        let allJobs = [];
-
-        for (
-            const role of resumeRoles
-        ) {
-            try {
-                const jobs =
-                    await fetchJobs(
-                        role,
-                        resumeLocation
-                    );
-
-                allJobs.push(
-                    ...jobs
-                );
-            } catch (error) {
-                console.log(
-                    `Job search failed for ${role}:`,
-                    error.response?.data ||
-                    error.message
-                );
-            }
-        }
-
-        // ==================================================
-        // FALLBACK WITHOUT LOCATION
-        // ==================================================
-        if (
-            allJobs.length === 0
-        ) {
-            for (
-                const role of resumeRoles
-            ) {
-                try {
-                    const jobs =
-                        await fetchJobs(
-                            role
-                        );
-
-                    allJobs.push(
-                        ...jobs
-                    );
-                } catch (error) {
-                    console.log(
-                        `Fallback search failed for ${role}:`,
-                        error.response?.data ||
-                        error.message
-                    );
-                }
-            }
-        }
-
-        // ==================================================
-        // NO LIVE JOBS
-        // ==================================================
-        if (
-            allJobs.length === 0
-        ) {
+        if (!liveJobs.length) {
             return res.status(200).json({
                 message:
-                    "No live jobs were found for your resume",
-                resumeId:
-                    resume._id,
+                    "No live jobs are currently available. Please try again later.",
+                resumeId: resume._id,
                 totalJobs: 0,
                 jobs: []
             });
@@ -783,12 +547,10 @@ export const matchJobs = async (
         // ==================================================
         // REMOVE DUPLICATES
         // ==================================================
-        const uniqueJobs =
-            new Map();
+        const uniqueJobs = new Map();
 
-        for (
-            const job of allJobs
-        ) {
+        for (const job of liveJobs) {
+
             const title =
                 job.title ||
                 job.job_title ||
@@ -808,11 +570,9 @@ export const matchJobs = async (
 
             const key =
                 job.id ||
-                `${normalizeText(title)}-${normalizeText(company)}-${normalizeText(location)}-${applyUrl}`;
+                `${normalizeText(title)}-${normalizeText(company)}-${normalizeText(location)}-${normalizeText(applyUrl)}`;
 
-            if (
-                !uniqueJobs.has(key)
-            ) {
+            if (!uniqueJobs.has(key)) {
                 uniqueJobs.set(
                     key,
                     job
@@ -821,7 +581,7 @@ export const matchJobs = async (
         }
 
         // ==================================================
-        // CALCULATE MATCHING
+        // CALCULATE MATCH
         // ==================================================
         const matchedJobs =
             [...uniqueJobs.values()]
@@ -829,14 +589,15 @@ export const matchJobs = async (
 
                     const match =
                         calculateMatch(
-                            resumeText,
+                            resume.resumeText,
                             job
                         );
 
                     return {
+
                         jobId:
                             job.id ||
-                            `${job.title}-${job.company}`,
+                            `${job.title || "job"}-${job.company || "company"}`,
 
                         title:
                             job.job_title ||
@@ -897,34 +658,31 @@ export const matchJobs = async (
                     };
                 })
 
-                // ==================================================
-                // ONLY RELEVANT JOBS
-                // ==================================================
+                // Only relevant jobs
                 .filter(
                     (job) =>
                         job.matchPercentage >= 30
                 )
 
-                // ==================================================
-                // BEST MATCH FIRST
-                // ==================================================
+                // Highest match first
                 .sort(
                     (a, b) =>
                         b.matchPercentage -
                         a.matchPercentage
                 )
 
-                // ==================================================
-                // TOP 20
-                // ==================================================
+                // Maximum 20 jobs
                 .slice(0, 20);
 
         // ==================================================
         // RESPONSE
         // ==================================================
         return res.status(200).json({
+
             message:
-                "Real and relevant jobs matched successfully",
+                matchedJobs.length > 0
+                    ? "Real and relevant jobs matched successfully"
+                    : "No sufficiently relevant live jobs were found",
 
             resumeId:
                 resume._id,
@@ -944,12 +702,24 @@ export const matchJobs = async (
             error.message
         );
 
+        // ==================================================
+        // RATE LIMIT
+        // ==================================================
         if (
-            error.response
+            error.response?.status === 429
         ) {
+            return res.status(429).json({
+                message:
+                    "Indian Jobs API rate limit exceeded. Please try again later."
+            });
+        }
+
+        // ==================================================
+        // OTHER API ERROR
+        // ==================================================
+        if (error.response) {
             return res.status(
-                error.response.status ||
-                500
+                error.response.status || 500
             ).json({
                 message:
                     "Indian Jobs API request failed",

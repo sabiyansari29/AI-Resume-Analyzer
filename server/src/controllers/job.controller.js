@@ -282,7 +282,7 @@ export const fetchLiveJobs = async (req, res) => {
         }
 
         const params = {
-            limit: Number(limit) || 20
+            limit: Math.min(Number(limit) || 20, 20)
         };
 
         if (title && title.trim() !== "") {
@@ -320,8 +320,15 @@ export const fetchLiveJobs = async (req, res) => {
             error.response?.data || error.message
         );
 
-        return res.status(500).json({
-            message: "Failed to fetch live jobs",
+        const statusCode = error.response?.status === 429
+            ? 429
+            : 500;
+
+        return res.status(statusCode).json({
+            message:
+                error.response?.status === 429
+                    ? "Indian Jobs API rate limit exceeded. Please try again later."
+                    : "Failed to fetch live jobs",
             error:
                 error.response?.data ||
                 error.message
@@ -376,6 +383,7 @@ const technicalSkills = [
     "tailwind",
     "tailwind css",
     "bootstrap",
+    "redux",
     "rest api",
     "rest apis",
     "jwt",
@@ -394,6 +402,7 @@ const technicalSkills = [
     "kubernetes",
     "jenkins",
     "jest",
+    "mocha",
     "machine learning",
     "artificial intelligence",
     "ai",
@@ -409,7 +418,10 @@ const technicalSkills = [
     "operating systems",
     "computer networks",
     "agile",
-    "scrum"
+    "scrum",
+    "problem solving",
+    "communication",
+    "teamwork"
 ];
 
 
@@ -499,7 +511,9 @@ const calculateJobRelevance = (resumeText, job) => {
     const jobSkills =
         findSkillsInText(jobNormalized);
 
-    // Remove duplicate skills
+    // ----------------------------------------------
+    // UNIQUE RESUME SKILLS
+    // ----------------------------------------------
     const uniqueResumeSkills = [
         ...new Set(
             resumeSkills.map((skill) =>
@@ -508,6 +522,9 @@ const calculateJobRelevance = (resumeText, job) => {
         )
     ];
 
+    // ----------------------------------------------
+    // UNIQUE JOB SKILLS
+    // ----------------------------------------------
     const uniqueJobSkills = [
         ...new Set(
             jobSkills.map((skill) =>
@@ -854,123 +871,69 @@ const getResumeLocation = (resumeText = "") => {
 // ======================================================
 // FETCH LIVE JOBS FOR RESUME
 // ======================================================
-const fetchJobsForResume = async (
-    resumeText
-) => {
+// IMPORTANT:
+// Only ONE external API request is made here.
+// We do NOT search every resume role separately.
+// Relevance matching is done locally afterwards.
+// ======================================================
+const fetchJobsForResume = async (resumeText) => {
+    try {
+        const resumeLocation =
+            getResumeLocation(resumeText);
 
-    const searchTerms =
-        getRoleSearchTerms(resumeText);
+        const params = {
+            limit: 20
+        };
 
-    const resumeLocation =
-        getResumeLocation(resumeText);
-
-    const allJobs = [];
-
-    // ----------------------------------------------
-    // SEARCH EACH RELEVANT ROLE
-    // ----------------------------------------------
-    for (const searchTerm of searchTerms) {
-
-        try {
-
-            const params = {
-                title: searchTerm,
-                limit: 20
-            };
-
-            // Location is NOT forced.
-            // This allows remote + other relevant jobs.
-            if (resumeLocation) {
-                params.location =
-                    resumeLocation;
-            }
-
-            const response =
-                await axios.get(
-                    "https://jobs.indianapi.in/jobs",
-                    {
-                        params,
-                        headers: {
-                            "x-api-key":
-                                process.env
-                                    .INDIAN_API_KEY
-                        },
-                        timeout: 15000
-                    }
-                );
-
-            const receivedJobs =
-                Array.isArray(
-                    response.data
-                )
-                    ? response.data
-                    : response.data?.jobs || [];
-
-            allJobs.push(
-                ...receivedJobs
-            );
-
-        } catch (error) {
-
-            console.log(
-                `Live job search failed for ${searchTerm}:`,
-                error.response?.data ||
-                    error.message
-            );
+        // Use resume location when available.
+        if (resumeLocation) {
+            params.location = resumeLocation;
         }
-    }
 
-    // ----------------------------------------------
-    // IF LOCATION SEARCH RETURNS NOTHING,
-    // SEARCH AGAIN WITHOUT LOCATION
-    // ----------------------------------------------
-    if (allJobs.length === 0) {
+        console.log(
+            "Fetching live jobs from Indian API..."
+        );
 
-        for (const searchTerm of searchTerms) {
+        console.log(
+            "Job API parameters:",
+            params
+        );
 
-            try {
-
-                const response =
-                    await axios.get(
-                        "https://jobs.indianapi.in/jobs",
-                        {
-                            params: {
-                                title:
-                                    searchTerm,
-                                limit: 20
-                            },
-                            headers: {
-                                "x-api-key":
-                                    process.env
-                                        .INDIAN_API_KEY
-                            },
-                            timeout: 15000
-                        }
-                    );
-
-                const receivedJobs =
-                    Array.isArray(
-                        response.data
-                    )
-                        ? response.data
-                        : response.data?.jobs || [];
-
-                allJobs.push(
-                    ...receivedJobs
-                );
-
-            } catch (error) {
-
-                console.log(
-                    `Fallback search failed for ${searchTerm}:`,
-                    error.response?.data ||
-                        error.message
-                );
+        const response = await axios.get(
+            "https://jobs.indianapi.in/jobs",
+            {
+                params,
+                headers: {
+                    "x-api-key":
+                        process.env.INDIAN_API_KEY
+                },
+                timeout: 15000
             }
-        }
-    }
+        );
 
-    return allJobs;
+        const receivedJobs =
+            Array.isArray(response.data)
+                ? response.data
+                : response.data?.jobs || [];
+
+        console.log(
+            `Indian API returned ${receivedJobs.length} jobs`
+        );
+
+        return receivedJobs;
+
+    } catch (error) {
+
+        console.log(
+            "Indian Jobs API error:",
+            error.response?.data ||
+                error.message
+        );
+
+        // Do not make another request here.
+        // This prevents rate-limit multiplication.
+        return [];
+    }
 };
 
 
@@ -1017,8 +980,7 @@ export const matchJobs = async (
         // CHECK API KEY
         // ----------------------------------------------
         if (
-            !process.env
-                .INDIAN_API_KEY
+            !process.env.INDIAN_API_KEY
         ) {
             return res.status(500).json({
                 message:
@@ -1037,7 +999,7 @@ export const matchJobs = async (
         if (!liveJobs.length) {
             return res.status(200).json({
                 message:
-                    "No live jobs were found for your resume",
+                    "No live jobs are currently available. Please try again later.",
                 resumeId,
                 totalJobs: 0,
                 jobs: []
@@ -1059,6 +1021,7 @@ export const matchJobs = async (
 
             const company =
                 job.company ||
+                job.company_name ||
                 "";
 
             const location =
@@ -1072,9 +1035,15 @@ export const matchJobs = async (
                 job.url ||
                 "";
 
-            const key =
+            const externalId =
                 job.id ||
-                `${normalizeText(title)}-${normalizeText(company)}-${normalizeText(location)}-${applyUrl}`;
+                job.job_id ||
+                job.jobId ||
+                "";
+
+            const key =
+                externalId ||
+                `${normalizeText(title)}-${normalizeText(company)}-${normalizeText(location)}-${normalizeText(applyUrl)}`;
 
             if (
                 !uniqueJobsMap.has(key)
@@ -1088,6 +1057,10 @@ export const matchJobs = async (
 
         const uniqueJobs =
             [...uniqueJobsMap.values()];
+
+        console.log(
+            `Unique live jobs after duplicate removal: ${uniqueJobs.length}`
+        );
 
         // ----------------------------------------------
         // CALCULATE RELEVANCE
@@ -1106,8 +1079,17 @@ export const matchJobs = async (
 
                         jobId:
                             job.id ||
+                            job.job_id ||
                             job._id ||
-                            `${job.title}-${job.company}`,
+                            `${normalizeText(
+                                job.title ||
+                                job.job_title ||
+                                "job"
+                            )}-${normalizeText(
+                                job.company ||
+                                job.company_name ||
+                                "company"
+                            )}`,
 
                         title:
                             job.title ||
@@ -1116,11 +1098,13 @@ export const matchJobs = async (
 
                         company:
                             job.company ||
+                            job.company_name ||
                             "Company Not Specified",
 
                         description:
                             job.job_description ||
                             job.description ||
+                            job.jobDescription ||
                             "",
 
                         location:
@@ -1130,16 +1114,19 @@ export const matchJobs = async (
                         jobType:
                             job.job_type ||
                             job.jobType ||
+                            job.employment_type ||
                             "Not specified",
 
                         experience:
                             job.experience ||
+                            job.experience_required ||
                             "",
 
                         postedDate:
                             job.posted_date ||
                             job.postedDate ||
                             job.created_at ||
+                            job.createdAt ||
                             "",
 
                         applyUrl:
@@ -1185,10 +1172,15 @@ export const matchJobs = async (
                 // ------------------------------------------
                 .slice(0, 20);
 
+        // ----------------------------------------------
+        // RESPONSE
+        // ----------------------------------------------
         return res.status(200).json({
 
             message:
-                "Real and relevant jobs matched successfully",
+                matchedJobs.length > 0
+                    ? "Real and relevant jobs matched successfully"
+                    : "No sufficiently relevant live jobs were found",
 
             resumeId,
 
