@@ -6,13 +6,9 @@ const API_URL =
 
 function App() {
   // ================= AUTH =================
-  const [page, setPage] = useState(
-    localStorage.getItem("token") ? "dashboard" : "login"
-  );
+  const [page, setPage] = useState("register");
 
-  const [loggedIn, setLoggedIn] = useState(
-    Boolean(localStorage.getItem("token"))
-  );
+  const [loggedIn, setLoggedIn] = useState(false);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -397,22 +393,6 @@ function App() {
   };
 
   // ================= JOB HELPERS =================
-  const formatPostedDate = (date) => {
-    if (!date) return "";
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return String(date);
-    }
-
-    return parsedDate.toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
   const getApplyUrl = (job) => {
     return (
       job?.applyUrl ||
@@ -1574,11 +1554,6 @@ function App() {
             {filteredJobs.length > 0 && (
               <div className="grid md:grid-cols-2 gap-6 mt-7">
                 {filteredJobs.map((job, index) => {
-                  const postedDate = formatPostedDate(
-                    job.postedDate ||
-                      job.posted_date
-                  );
-
                   const applyUrl =
                     getApplyUrl(job);
 
@@ -1619,12 +1594,6 @@ function App() {
                         {job.experience && (
                           <span className="bg-blue-50 border border-blue-200 rounded-full px-3 py-1 text-sm text-blue-700">
                             🎓 {job.experience}
-                          </span>
-                        )}
-
-                        {postedDate && (
-                          <span className="bg-purple-50 border border-purple-200 rounded-full px-3 py-1 text-sm text-purple-700">
-                            🗓 Posted {postedDate}
                           </span>
                         )}
                       </div>
@@ -1780,23 +1749,6 @@ function App() {
 
                   <p className="mt-1 text-slate-800">
                     🎓 {selectedJob.experience}
-                  </p>
-                </div>
-              )}
-
-              {(selectedJob.postedDate ||
-                selectedJob.posted_date) && (
-                <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4">
-                  <p className="text-purple-600 text-sm">
-                    Posted Date
-                  </p>
-
-                  <p className="mt-1 text-slate-800">
-                    🗓{" "}
-                    {formatPostedDate(
-                      selectedJob.postedDate ||
-                        selectedJob.posted_date
-                    )}
                   </p>
                 </div>
               )}
