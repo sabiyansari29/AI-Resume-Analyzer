@@ -502,112 +502,52 @@ function App() {
     getArray(analysis?.recommendedSkills)
   );
 
-  const keywordDictionary = [
-    "JavaScript",
-    "TypeScript",
-    "Java",
-    "Python",
-    "C++",
-    "HTML",
-    "CSS",
-    "React",
-    "React.js",
-    "Node.js",
-    "Express",
-    "Express.js",
-    "MongoDB",
-    "MySQL",
-    "SQL",
-    "Tailwind CSS",
-    "Bootstrap",
-    "REST API",
-    "REST APIs",
-    "JWT",
-    "Git",
-    "GitHub",
-    "MERN",
-    "Flask",
-    "Django",
-    "FastAPI",
-    "Firebase",
-    "AWS",
-    "Azure",
-    "GCP",
-    "Docker",
-    "Kubernetes",
-    "CI/CD",
-    "GitHub Actions",
-    "Jenkins",
-    "Jest",
-    "Mocha",
-    "Machine Learning",
-    "Artificial Intelligence",
-    "AI",
-    "OpenAI",
-    "Groq",
-    "OpenCV",
-    "YOLO",
-    "YOLOv8",
-    "Data Structures",
-    "Algorithms",
-    "DBMS",
-    "Operating Systems",
-    "Computer Networks",
-    "Agile",
-    "Scrum",
-    "Problem Solving",
-    "Communication",
-    "Teamwork",
-  ];
+  /*
+    IMPORTANT FIX:
 
-  const analysisSearchText = useMemo(() => {
-    if (!analysis) return "";
+    Earlier the frontend was scanning the complete AI response
+    and checking whether words like TypeScript, Docker, AWS etc.
+    existed anywhere in the response.
 
-    const values = [];
+    That caused a problem:
 
-    const collect = (value) => {
-      if (!value) return;
+    AI says:
+    "TypeScript is missing."
 
-      if (typeof value === "string") {
-        values.push(value);
-        return;
-      }
+    Frontend sees the word "TypeScript" and incorrectly shows it
+    under "Keywords Found".
 
-      if (Array.isArray(value)) {
-        value.forEach(collect);
-        return;
-      }
+    Now we ONLY use the actual keyword arrays returned by backend.
+  */
 
-      if (typeof value === "object") {
-        Object.values(value).forEach(collect);
-      }
-    };
-
-    collect(analysis);
-
-    return values.join(" ").toLowerCase();
-  }, [analysis]);
-
-  const detectedKeywords = useMemo(() => {
-    if (!analysisSearchText) return [];
-
-    return keywordDictionary.filter((keyword) =>
-      analysisSearchText.includes(
-        keyword.toLowerCase()
-      )
-    );
-  }, [analysisSearchText]);
-
-  const keywordsFound = unique([
-    ...backendFoundKeywords,
-    ...detectedKeywords,
-  ]);
-
-  const missingKeywords = unique([
+  const normalizedMissingKeywords = unique([
     ...backendMissingKeywords,
     ...missingSkills,
   ]);
 
+  const missingKeywordKeys = new Set(
+    normalizedMissingKeywords.map((item) =>
+      String(item)
+        .toLowerCase()
+        .replace(/[^\w+#.-]/g, "")
+        .trim()
+    )
+  );
+
+  const keywordsFound = unique(
+    backendFoundKeywords
+  ).filter((keyword) => {
+    const key = String(keyword)
+      .toLowerCase()
+      .replace(/[^\w+#.-]/g, "")
+      .trim();
+
+    return !missingKeywordKeys.has(key);
+  });
+
+  const missingKeywords = normalizedMissingKeywords;
+
+  // ================= KEYWORD COVERAGE =================
   const backendCoverage = Number(
     analysis?.keywordCoverage ??
       analysis?.keywordCoveragePercentage ??
@@ -619,7 +559,7 @@ function App() {
 
   if (
     Number.isFinite(backendCoverage) &&
-    backendCoverage > 0
+    backendCoverage >= 0
   ) {
     keywordCoverage = Math.min(
       100,
@@ -637,6 +577,7 @@ function App() {
     }
   }
 
+  // ================= ATS LABEL =================
   const getAtsLabel = (score) => {
     if (score >= 85) return "Excellent";
     if (score >= 70) return "Good";

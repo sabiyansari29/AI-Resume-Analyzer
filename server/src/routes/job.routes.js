@@ -5,8 +5,7 @@ import {
     getJobs,
     getJobById,
     updateJob,
-    deleteJob,
-    fetchLiveJobs
+    deleteJob
 } from "../controllers/job.controller.js";
 
 import {
@@ -16,7 +15,6 @@ import {
 import authMiddleware from "../middleware/auth.middleware.js";
 
 const router = express.Router();
-
 
 // ==========================================
 // JOB MATCHING
@@ -28,18 +26,6 @@ router.get(
     matchJobs
 );
 
-
-// ==========================================
-// FETCH LIVE JOBS FROM INDIAN API
-// ==========================================
-
-router.get(
-    "/live",
-    authMiddleware,
-    fetchLiveJobs
-);
-
-
 // ==========================================
 // CREATE JOB
 // ==========================================
@@ -49,7 +35,6 @@ router.post(
     authMiddleware,
     createJob
 );
-
 
 // ==========================================
 // GET ALL JOBS
@@ -61,7 +46,6 @@ router.get(
     getJobs
 );
 
-
 // ==========================================
 // GET SINGLE JOB
 // ==========================================
@@ -71,7 +55,6 @@ router.get(
     authMiddleware,
     getJobById
 );
-
 
 // ==========================================
 // UPDATE JOB
@@ -83,7 +66,6 @@ router.put(
     updateJob
 );
 
-
 // ==========================================
 // DELETE JOB
 // ==========================================
@@ -93,6 +75,5 @@ router.delete(
     authMiddleware,
     deleteJob
 );
-
 
 export default router;
